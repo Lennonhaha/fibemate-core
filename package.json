@@ -1,0 +1,40 @@
+{
+  "name": "fibemate-core",
+  "version": "0.1.0",
+  "description": "FIBEMATE post-quantum crypto core — ML-KEM-768 (FIPS 203) pure-JS reference implementation",
+  "type": "commonjs",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./kem/ml-kem-768": "./src/kem/ml-kem-768.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/kem/ml-kem-768.js",
+    "src/kem/params.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/ml-kem-768.test.js"
+  },
+  "keywords": [
+    "pqc",
+    "post-quantum",
+    "ml-kem",
+    "ml-kem-768",
+    "fips-203",
+    "cryptography",
+    "kem",
+    "nist"
+  ],
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lennonhaha/fibemate.git"
+  }
+}
