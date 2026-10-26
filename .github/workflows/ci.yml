@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: kem tests (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node: ['18', '20', '22']
+        include:
+          - os: windows-latest
+            node: '20'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: run reference KEM tests
+        run: node test/ml-kem-768.test.js
+
+  encoding:
+    name: encoding gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: no BOM, no CRLF, no U+FFFD in tracked files
+        run: node scripts/check-encoding.cjs

@@ -141,8 +141,23 @@ function loadParams(paramSet) {
 }
 loadParams(_currentParamSet);  // default: ML-KEM-768
 
-// Detect WebCrypto (globalThis.crypto in browsers, require('crypto').webcrypto in Node)
-const _webcrypto = (typeof crypto !== 'undefined' && crypto.getRandomValues) ? crypto : null;
+// Detect WebCrypto: globalThis.crypto in browsers and Node >= 19,
+// require('crypto').webcrypto in Node 15-18 (where the global is not exposed).
+function resolveWebcrypto() {
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto && globalThis.crypto.getRandomValues) {
+        return globalThis.crypto;
+    }
+    try {
+        const nodeCrypto = require('crypto');
+        if (nodeCrypto && nodeCrypto.webcrypto && nodeCrypto.webcrypto.getRandomValues) {
+            return nodeCrypto.webcrypto;
+        }
+    } catch (err) {
+        // not running on Node, or the crypto module is unavailable
+    }
+    return null;
+}
+const _webcrypto = resolveWebcrypto();
 
 // ============================================================================
 // SHA-3 / SHAKE - Pure JavaScript Keccak
@@ -543,8 +558,8 @@ function samplePoly(seed, nonce) {
  */
 function generateKeypair() {
     if (!_webcrypto) throw new Error('Web Crypto API (crypto.getRandomValues) required');
-    const d = crypto.getRandomValues(new Uint8Array(32));
-    const z = crypto.getRandomValues(new Uint8Array(32));
+    const d = _webcrypto.getRandomValues(new Uint8Array(32));
+    const z = _webcrypto.getRandomValues(new Uint8Array(32));
     const seed = sha3_512(d);
     const rho = seed.slice(0, 32);
     const sigma = seed.slice(32, 64);
@@ -601,7 +616,7 @@ function generateKeypair() {
 function encapsulate(publicKey) {
     if (!_webcrypto) throw new Error('Web Crypto API (crypto.getRandomValues) required');
     if (publicKey.length !== KYBER_PUBLICKEYBYTES) throw new RangeError(`publicKey must be ${KYBER_PUBLICKEYBYTES} bytes, got ${publicKey.length}`);
-    const m = crypto.getRandomValues(new Uint8Array(32));
+    const m = _webcrypto.getRandomValues(new Uint8Array(32));
 
     const t = [];
     let off = 0;
