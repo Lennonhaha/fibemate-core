@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // fibemate-core — dual-environment entry
 // Node.js (CJS):        require('fibemate-core')
 // Browser (<script>):   window.MLKEM768 (auto-registers via core file)

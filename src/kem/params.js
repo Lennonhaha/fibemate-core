@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 FIBEMATE Contributors
 // packages/pqc-kem/src/params.js
 // FIPS 203 (ML-KEM) runtime parameter sets
 // Pattern: match fml-dsa/src/core/params.js — runtime-switchable, not compile-time constants
