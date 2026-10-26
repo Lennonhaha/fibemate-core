@@ -2,11 +2,16 @@
 
 FIBEMATE 后量子密码学核心原语 — 纯 JavaScript 实现，浏览器 / Node.js 双端可用。
 
+> **Status:** reference implementation (interoperability and teaching). Not production-grade.
+> **Warning:** no side-channel hardening. Constant-time idioms are used, but pure JavaScript
+> cannot guarantee constant-time execution — the JIT may reorder or eliminate operations.
+> Use the WASM/C path in the main repository for anything that needs real timing guarantees.
+
 ## 当前版本内容
 
 | 原语 | 标准 | 实现状态 | 说明 |
 |------|------|----------|------|
-| **ML-KEM-768** | FIPS 203 | ✅ 自研纯 JS（841 行） | 恒定时间硬化参考实现，零依赖 |
+| **ML-KEM-768** | FIPS 203 | ✅ 自研纯 JS（857 行） | 参考实现，零依赖；<b>未做侧信道加固</b> |
 
 > **路线图**：ML-DSA-65（FIPS 204）、SLH-DSA（FIPS 205）、SM2/SM3/SM4（国密）将陆续加入。
 > 注意：主仓 `packages/fml-dsa` 目前是 @noble/post-quantum 的封装（非独立实现），
@@ -74,10 +79,19 @@ const recovered = decapsulate(secretKey, ciphertext);
 npm test   # 8 项测试：长度/roundtrip/篡改检测/会话隔离
 ```
 
-参考实现（`src/kem/ml-kem-768.js`）特性：
-- 恒定时间比较（`ctEqMask`）与选择（`ctSelectU8`）
+参考实现（`src/kem/ml-kem-768.js`）的防护写法（**尽力而为，不等同于恒定时间保证**）：
+- 无分支比较（`ctEqMask`）与选择（`ctSelectU8`）
 - 敏感中间值归零（`zeroize*`）
-- 错误密文不提前返回（计算双方候选密钥后恒定时间选择）
+- 错误密文不提前返回（计算双方候选密钥后用掩码选择）
+
+> **为什么不能声称"恒定时间"**：纯 JS 无法约束 JIT 优化、分支预测与数组访问模式。
+> 文件内对模运算的处理已明确标注 `WARNING: not truly constant-time in pure JS`。
+> 因此本项目**不作**恒定时间保证，也未做 TVLA/侧信道测量以外的任何硬化验证。
+
+## 关联项目
+
+- VWZ 形式化验证：https://github.com/Lennonhaha/vwz-formalization
+- CBOM 审计与文档数字对账工具：https://github.com/Lennonhaha/fibemate-tools
 
 ## 来源与许可
 
