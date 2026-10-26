@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 'use strict';
-// SPDX-License-Identifier: GPL-3.0-only
 // 编码闸门：遍历 git 跟踪的文件，拒绝 BOM / CRLF / U+FFFD / NUL。
 // 用字节判定，不依赖终端显示层（Windows 控制台的 GBK 显示不是判据）。
 const { execFileSync } = require('child_process');

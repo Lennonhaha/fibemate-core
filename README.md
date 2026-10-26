@@ -88,6 +88,14 @@ npm test   # 8 项测试：长度/roundtrip/篡改检测/会话隔离
 > 文件内对模运算的处理已明确标注 `WARNING: not truly constant-time in pure JS`。
 > 因此本项目**不作**恒定时间保证，也未做 TVLA/侧信道测量以外的任何硬化验证。
 
+## 实现范围
+
+本仓库只有 **JavaScript** 参考实现。C、WebAssembly、FPGA 三端实现位于主仓：
+https://github.com/Lennonhaha/fibemate
+
+> Note: This repository contains the JS reference implementation. The C, WebAssembly,
+> and FPGA implementations are located in the main FIBEMATE repository.
+
 ## 关联项目
 
 - VWZ 形式化验证：https://github.com/Lennonhaha/vwz-formalization
@@ -96,5 +104,5 @@ npm test   # 8 项测试：长度/roundtrip/篡改检测/会话隔离
 ## 来源与许可
 
 - 来源：https://github.com/Lennonhaha/fibemate （`packages/pqc-kem/src/`）
-- 许可：GPL-3.0-only（SPDX）
+- 许可：**Apache-2.0**（SPDX）。允许闭源商用，只需保留版权与许可声明。
 - 这不是学术基准实现；生产使用请配合独立审计与 KAT 验证。
