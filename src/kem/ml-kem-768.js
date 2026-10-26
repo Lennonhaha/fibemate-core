@@ -1,3 +1,25 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 FIBEMATE Contributors
+/**
+ * ML-KEM-768 — reference implementation (interoperability and teaching).
+ *
+ * NOT side-channel hardened. The code uses constant-time idioms (ctSelectU8,
+ * ctEqMask, zeroize*, no early return in decapsulation), but pure JavaScript
+ * cannot guarantee constant-time execution: the JIT may reorder or eliminate
+ * operations and typed-array access patterns are engine-dependent. See the
+ * WARNING next to the modular arithmetic helpers. Use the WASM path for
+ * production workloads; this file exists for auditability.
+ *
+ * Derived from the original FIBEMATE time-domain implementation.
+ * Changes relative to the original:
+ *   1. Constant-time helper functions (ctSelectU8, ctEqMask, zeroize*).
+ *   2. decapsulate no longer uses `fail ? a : b`; it computes both
+ *      candidate shared secrets and uses ctSelectU8.
+ *   3. polyMul no longer skips zero coefficients (branch-free).
+ *   4. Sensitive intermediate values are zeroized before return.
+ *
+ * Performance: ~2x slower than the original due to the branch-free polyMul.
+ */
 const RC_LO = new Uint32Array([
   0x00000001, 0x00008082, 0x0000808a, 0x80008000,
   0x0000808b, 0x80000001, 0x80008081, 0x00008009,
@@ -104,22 +126,6 @@ function keccakF1600(S) {
 }
 
 
-// SPDX-License-Identifier: GPL-3.0-only
-// Copyright (c) 2026 FIBEMATE Contributors
-/**
- * ML-KEM-768 —Constant-time hardened reference implementation
- *
- * Derived from the original FIBEMATE time-domain implementation.
- * Changes relative to the original:
- *   1. Constant-time helper functions (ctSelectU8, ctEqMask, zeroize*).
- *   2. decapsulate no longer uses `fail ? a : b`; it computes both
- *      candidate shared secrets and uses ctSelectU8.
- *   3. polyMul no longer skips zero coefficients (constant-time).
- *   4. Sensitive intermediate values are zeroized before return.
- *
- * Performance: ~2x slower than the original due to constant-time polyMul.
- * Use the WASM path for production workloads; this file is for auditability.
- */
 
 // Runtime parameter set (AA: algorithm agility — switchable without recompile)
 const { getParams, listParamSets, MLKEM_PARAMS } = require('./params');
