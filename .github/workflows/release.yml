@@ -167,12 +167,33 @@ jobs:
         run: npm publish --provenance --access public
 
       - name: Confirm the registry sees the release
+        # A brand-new package can land in npm's staged publishing: the registry
+        # accepts the tarball, reserves the name with a `0.0.0-stage` placeholder
+        # and waits for a human to approve the version with 2FA. That is not a
+        # failure of this workflow, so poll for a while, then report which state
+        # the registry is actually in instead of a bare 404.
         if: steps.guard.outputs.skip != 'true'
         run: |
           set -euo pipefail
           name=$(node -p "require('./package.json').name")
           version=$(node -p "require('./package.json').version")
-          npm view "$name@$version" version dist.tarball dist.integrity dist.attestations --json
+          for i in $(seq 1 18); do
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              npm view "$name@$version" version dist.tarball dist.integrity dist.attestations --json
+              exit 0
+            fi
+            tags=$(npm view "$name" dist-tags --json 2>/dev/null || echo '{}')
+            if printf '%s' "$tags" | grep -q '0.0.0-stage'; then
+              echo "staged: the registry holds $name@$version behind a 0.0.0-stage placeholder"
+              echo "approve it at https://www.npmjs.com/package/$name (Staged releases) with 2FA"
+              echo "::warning::$name@$version is staged and awaits approval; it is not installable yet"
+              exit 0
+            fi
+            echo "waiting for the registry to index $name@$version (attempt $i/18)"
+            sleep 10
+          done
+          echo "::error::$name@$version did not become visible within 3 minutes"
+          exit 1
 
       - name: Record result
         if: always()
