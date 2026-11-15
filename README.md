@@ -19,11 +19,22 @@ FIBEMATE 后量子密码学核心原语 — 纯 JavaScript 实现，浏览器 / 
 
 ## 安装
 
-**本地参考实现，未发布到 npm。** 不要写 `npm install fibemate-core`（registry 上没有这个包）。
-用它就直接引用本目录：
+```bash
+npm install fibemate-core@0.1.0
+```
+
+发布于 2026-11-15，由 tag `v0.1.0` 触发的 GitHub Actions 发布，带 Sigstore provenance
+（SLSA），可在下载后校验：
 
 ```bash
-cd fibemate-core && npm link      # 或者在使用方用相对路径 require('./fibemate-core')
+npm view fibemate-core@0.1.0 dist.integrity dist.attestations
+npm audit signatures
+```
+
+或者直接引用本目录（开发时）：
+
+```bash
+cd fibemate-core && npm link
 ```
 
 > 注意：本包是**纯 JS 参考实现**（`src/kem/ml-kem-768.js`，无原生依赖）；
