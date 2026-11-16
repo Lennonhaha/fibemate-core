@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "FIBEMATE post-quantum crypto core — ML-KEM-768 (FIPS 203) pure-JS reference implementation",
   "type": "commonjs",
+  "author": "刘天赫 <research@fibemate.net>",
   "main": "index.js",
   "exports": {
     ".": "./index.js",
