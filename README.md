@@ -40,6 +40,21 @@ cd fibemate-core && npm link
 > 注意：本包是**纯 JS 参考实现**（`src/kem/ml-kem-768.js`，无原生依赖）；
 > 主仓里同名的 `packages/pqc-kem` 是另一个东西（带 C addon 的生产实现）。
 
+## Quick start（5 行跑通）
+
+```js
+const { generateKeypair, encapsulate, decapsulate } = require('fibemate-core');
+const { publicKey, secretKey } = generateKeypair();
+const { ciphertext, sharedSecret } = encapsulate(publicKey);
+const recovered = decapsulate(secretKey, ciphertext);
+console.log(Buffer.from(recovered).equals(Buffer.from(sharedSecret))); // true
+```
+
+把上面五行存成 `run.js` 直接 `node run.js`，输出 `true`。这段是在临时目录里 `npm install` 打包产物
+（`fibemate-core-0.1.0.tgz`，16 KB，六个文件）之后跑出来的，不是从源码目录 require 的结果。
+
+`decapsulate` 的参数顺序是 `(secretKey, ciphertext)`，与部分库相反；下面「使用」一节是带长度注释的版本。
+
 ## 使用
 
 ### Node.js (CommonJS)
