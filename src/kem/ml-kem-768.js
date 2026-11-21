@@ -169,58 +169,6 @@ const _webcrypto = resolveWebcrypto();
 // SHA-3 / SHAKE - Pure JavaScript Keccak
 // ============================================================================
 
-const KeccakF1600Constants = {
-    RhoOffsets: [
-        0, 1, 62, 28, 27, 36, 44, 6, 55, 20, 3, 10, 43, 25, 39, 41, 45, 15, 21, 8, 18, 2, 61, 56, 14
-    ],
-    PiOffsets: [
-        0, 10, 20, 5, 15, 16, 1, 11, 21, 6, 7, 17, 2, 12, 22, 23, 8, 18, 3, 13, 14, 24, 9, 19, 4
-    ],
-    RoundConstants: [
-        0x0000000000000001n,0x0000000000008082n,0x800000000000808an,
-        0x8000000080008000n,0x000000000000808bn,0x0000000080000001n,
-        0x8000000080008081n,0x8000000000008009n,0x000000000000008an,
-        0x0000000000000088n,0x0000000080008009n,0x000000008000000an,
-        0x000000008000808bn,0x800000000000008bn,0x8000000000008089n,
-        0x8000000000008003n,0x8000000000008002n,0x8000000000000080n,
-        0x000000000000800an,0x800000008000000an,0x8000000080008081n,
-        0x8000000000008080n,0x0000000080000001n,0x8000000080008008n
-    ]
-};
-
-function ROL64(a, n) {
-    return n === 0 ? a : ((a << BigInt(n)) | (a >> BigInt(64 - n))) & 0xFFFFFFFFFFFFFFFFn;
-}
-
-function KeccakF1600Ref(state) {
-    const C = new BigInt64Array(5);
-    const D = new BigInt64Array(5);
-    const B = new BigInt64Array(25);
-    for (let round = 0; round < 24; round++) {
-        for (let x = 0; x < 5; x++)
-            C[x] = state[x] ^ state[x+5] ^ state[x+10] ^ state[x+15] ^ state[x+20];
-        for (let x = 0; x < 5; x++)
-            D[x] = C[(x+4)%5] ^ ROL64(C[(x+1)%5], 1);
-        for (let i = 0; i < 25; i++)
-            state[i] ^= D[i % 5];
-        for (let i = 0; i < 25; i++)
-            B[KeccakF1600Constants.PiOffsets[i]] = ROL64(state[i], KeccakF1600Constants.RhoOffsets[i]);
-        for (let x = 0; x < 5; x++)
-            for (let y = 0; y < 5; y++)
-                state[x+5*y] = B[x+5*y] ^ ((~B[(x+1)%5+5*y] & 0xFFFFFFFFFFFFFFFFn) & B[(x+2)%5+5*y]);
-        state[0] ^= KeccakF1600Constants.RoundConstants[round];
-    }
-}
-
-function load64(b, i) {
-    let r = 0n;
-    for (let j = 0; j < 8; j++) r |= BigInt(b[i+j]) << BigInt(8*j);
-    return r;
-}
-function store64(b, i, v) {
-    for (let j = 0; j < 8; j++) { b[i+j] = Number(v & 0xFFn); v >>= 8n; }
-}
-
 class XofShake {
     constructor(rateBytes, suffix) {
         this.rate = rateBytes;          // bytes
