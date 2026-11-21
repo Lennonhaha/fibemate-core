@@ -27,8 +27,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - name: run reference KEM tests
-        run: node test/ml-kem-768.test.js
+      - name: run reference KEM tests and the README quick start
+        run: npm test
 
   encoding:
     name: encoding gate
