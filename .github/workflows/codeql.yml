@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: Apache-2.0
+# Draft for fibemate-core/.github/workflows/codeql.yml -- NOT committed.
+name: codeql
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 3" # Wednesdays 06:00 UTC
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # JavaScript/TypeScript needs no autobuild step: init + analyze is the whole flow.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          category: "/language:javascript-typescript"
+
+  # Same reasoning as fibemate/.github/workflows/codeql.yml: a required check that stops
+  # running (paths filter, job-level if, deleted job) still satisfies a ruleset, because
+  # skipped and neutral are accepted. This job has no paths filter and fails unless the
+  # analysis really completed. It proves the scan ran; it does not make findings block.
+  codeql-gate:
+    name: codeql-gate
+    runs-on: ubuntu-latest
+    needs: analyze
+    if: always()
+    permissions:
+      contents: read
+    steps:
+      - name: Fail unless the analysis ran and completed
+        env:
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+        run: |
+          if [ "$ANALYZE_RESULT" != "success" ]; then
+            echo "CodeQL analysis did not complete: $ANALYZE_RESULT"
+            exit 1
+          fi
