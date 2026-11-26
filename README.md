@@ -19,6 +19,8 @@ FIBEMATE 后量子密码学核心原语 — 纯 JavaScript 实现，浏览器 / 
 
 ## 安装
 
+需要 Node.js 18 或更高版本（见 `package.json` 的 `engines` 字段）。
+
 ```bash
 npm install fibemate-core@0.1.0
 ```
