@@ -109,6 +109,8 @@ npm test   # 8 项测试：长度/roundtrip/篡改检测/会话隔离
 
 CI 在 Ubuntu 上跑 Node.js 18 / 20 / 22，在 Windows 上跑 Node.js 20；另有一道 encoding gate。
 
+每次发布的 CI 记录（含已定性为假阴性的红 run）见 [`docs/RELEASES.md`](docs/RELEASES.md)。
+
 参考实现（`src/kem/ml-kem-768.js`）的防护写法（**尽力而为，不等同于恒定时间保证**）：
 - 无分支比较（`ctEqMask`）与选择（`ctSelectU8`）
 - 敏感中间值归零（`zeroize*`）
