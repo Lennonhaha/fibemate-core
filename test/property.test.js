@@ -6,6 +6,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const kem = require('..');
 
+// Node 18 has webcrypto but does not expose it as a global; @noble/post-quantum
+// reads crypto.getRandomValues, so give it the same backend the KEM uses.
+if (typeof globalThis.crypto === 'undefined') {
+  Object.defineProperty(globalThis, 'crypto', {
+    value: require('node:crypto').webcrypto,
+    configurable: true,
+    writable: true
+  });
+}
+
 const N = Number(process.env.PROPERTY_ROUNDS || 200);
 const CROSS = Number(process.env.CROSS_ROUNDS || 100);
 
