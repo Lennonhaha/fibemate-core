@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  issues: write # the registry-truth step files an issue when the run lies about publishing
   id-token: write # required for provenance (OIDC)
 
 concurrency:
@@ -161,12 +162,19 @@ jobs:
           "
 
       - name: Publish with provenance
+        id: publish
         if: steps.guard.outputs.skip != 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
 
       - name: Confirm the registry sees the release
+        # Advisory only. This step used to decide whether the release "happened";
+        # it read a 404 during npm staged publishing on 2026-11-15 and turned a
+        # successful publish into a red run that nobody reconciled for 11 days.
+        # The authoritative check is the next step, which asks the registry.
+        id: confirm
+        continue-on-error: true
         # A brand-new package can land in npm's staged publishing: the registry
         # accepts the tarball, reserves the name with a `0.0.0-stage` placeholder
         # and waits for a human to approve the version with 2FA. That is not a
@@ -195,6 +203,65 @@ jobs:
           echo "::error::$name@$version did not become visible within 3 minutes"
           exit 1
 
+      - name: Registry truth — ask the registry, not this run
+        # Runs whenever publish was attempted, including when publish itself
+        # failed. If the registry has the version, that is the fact; the run's
+        # conclusion is not. Missing version after the timeout stays a failure.
+        id: truth
+        if: always() && steps.publish.outcome != 'skipped' && steps.publish.outcome != ''
+        run: |
+          set +e
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          tarball=$(npm pack --silent | tail -n 1)
+          node scripts/verify-registry-truth.cjs \
+            --package "$name" \
+            --version "$version" \
+            --timeout 900 \
+            --interval 10 \
+            --tarball "$tarball" > registry-truth.json
+          rc=$?
+          rm -f "$tarball"
+          set -e
+          if [ $rc -eq 0 ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+          exit $rc
+
+      - name: Alert — the registry disagrees with this run
+        # A green registry plus a failed confirm/publish is the exact shape of
+        # the 2026-11-15 incident. File one issue per version, not per attempt.
+        if: always() && steps.truth.outputs.found == 'true' && (steps.confirm.outcome != 'success' || steps.publish.outcome != 'success')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          name="${{ steps.pkg.outputs.name }}"
+          version="${{ steps.pkg.outputs.version }}"
+          title="[release] ${name}@${version} is on the registry but the workflow reported failure"
+          existing=$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search "${name}@${version} in:title" --json number --jq '.[0].number // empty')
+          body=$(cat <<EOF
+          @Lennonhaha — registry truth contradicts this workflow run.
+
+          - package: `${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}`
+          - registry: `https://www.npmjs.com/package/${{ steps.pkg.outputs.name }}/v/${{ steps.pkg.outputs.version }}`
+          - run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          - publish step: `${{ steps.publish.outcome }}`
+          - confirm step: `${{ steps.confirm.outcome }}`
+          - registry truth: `${{ steps.truth.outputs.found }}`
+
+          The package exists on the registry. Treat the run conclusion as wrong about the release, verify the tarball, and if it is good, do not re-publish. This issue exists so that a false red run cannot hide a live package again.
+          EOF
+          )
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" -R "$GITHUB_REPOSITORY" --body "$body"
+            echo "commented on existing issue #$existing"
+          else
+            gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body "$body" --assignee Lennonhaha
+          fi
+
       - name: Record result
         if: always()
         run: |
@@ -205,4 +272,13 @@ jobs:
             echo "- event: ${GITHUB_EVENT_NAME}"
             echo "- skipped (already on registry): ${{ steps.guard.outputs.skip }}"
             echo "- job status: ${{ job.status }}"
+            echo "- publish step: ${{ steps.publish.outcome }}"
+            echo "- confirm step (advisory): ${{ steps.confirm.outcome }}"
+            echo "- registry truth: ${{ steps.truth.outputs.found }}"
+            if [ -f registry-truth.json ]; then
+              echo ""
+              echo '```json'
+              cat registry-truth.json
+              echo '```'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
