@@ -16,11 +16,14 @@
     "src/kem/fips203.js",
     "src/kem/params.js",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "examples/minimal-chat.js"
   ],
   "scripts": {
-    "test": "node test/ml-kem-768.test.js && node --test test/quickstart.test.js && node test/kat-mlkem768.test.js",
-    "test:mutation": "node scripts/mutation-check.cjs"
+    "test": "node --test",
+    "test:mutation": "node scripts/mutation-check.cjs",
+    "test:coverage": "c8 --all --include=\"index.js\" --include=\"src/**/*.js\" --exclude=\"test/**\" --check-coverage --lines 90 --functions 90 --branches 80 --reporter=text node --test",
+    "preflight": "node scripts/noble-differential.cjs"
   },
   "keywords": [
     "pqc",
@@ -39,5 +42,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Lennonhaha/fibemate-core.git"
+  },
+  "devDependencies": {
+    "@noble/post-quantum": "^0.7.1",
+    "c8": "^12.0.0"
   }
 }

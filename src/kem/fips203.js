@@ -332,6 +332,12 @@ function encapsulate(publicKey){
  * For KAT / ACVP vector testing only; see the warning on keygenDerand.
  */
 function encapsDerand(publicKey,m){
+    if(!(publicKey instanceof Uint8Array))
+        throw new TypeError('encapsulate: publicKey must be a Uint8Array');
+    if(publicKey.length!==KYBER_PUBLICKEYBYTES)
+        throw new RangeError('encapsulate: publicKey must be ' + KYBER_PUBLICKEYBYTES + ' bytes, got ' + publicKey.length);
+    if(!encapsKeyCheck(publicKey))
+        throw new Error('encapsulate: public key is not canonical (FIPS 203 7.2)');
     if(!(m instanceof Uint8Array)||m.length!==32) throw new Error('encapsDerand: m must be 32 bytes');
     const K = KYBER_K, eta1 = _KYBER_ETA1, eta2 = _KYBER_ETA2;
     const duBytes = 32 * KYBER_DU;
@@ -422,6 +428,13 @@ function decapsulate(secretKey,ciphertext){
     const _h=secretKey.slice(off,off+32);off+=32;  // H(pk) — implicit-rejection check field
     const z=secretKey.slice(off,off+32);
 
+    // FIPS 203 7.3 decapsulation key check: the stored H(ek) must match the
+    // embedded ek. Without it a corrupted key silently returned a wrong shared
+    // secret instead of reporting an invalid key.
+    const hpkCheck=sha3_256(pk);
+    if(ctEqMask(_h,hpkCheck)!==0xff)
+        throw new Error('decapsulate: secret key is inconsistent (H(ek) mismatch, FIPS 203 7.3)');
+
     // ct = … || compress_du(u) || compress_dv(v)
     const u=[];
     off=0;
@@ -438,8 +451,7 @@ function decapsulate(secretKey,ciphertext){
     const mPrime=polyToMsg(mp);
 
     // G(m'‖H(pk)) → (K_bar', r')
-    const hpk=sha3_256(pk);
-    const G2=sha3_512(new Uint8Array([...mPrime,...hpk]));
+    const G2=sha3_512(new Uint8Array([...mPrime,...hpkCheck]));
     const K_bar_prime=G2.slice(0,32), r2seed=G2.slice(32,64);
     const rho=new Uint8Array(pk.slice(K*384,K*384+32));
 

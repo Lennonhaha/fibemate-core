@@ -161,6 +161,17 @@ jobs:
             }
           "
 
+      - name: Preflight — 100-record KAT corpus
+        if: steps.guard.outputs.skip != 'true'
+        run: node test/kat-mlkem768.test.js
+
+      - name: Preflight — NIST ACVP 80 cases (keyGen, encaps, decaps, key checks)
+        if: steps.guard.outputs.skip != 'true'
+        run: node --test test/acvp-keygen.test.js test/acvp-encapdecap.test.js
+
+      - name: Preflight — differential against @noble/post-quantum (100 rounds each way)
+        if: steps.guard.outputs.skip != 'true'
+        run: node scripts/noble-differential.cjs
       - name: Publish with provenance
         id: publish
         if: steps.guard.outputs.skip != 'true'
