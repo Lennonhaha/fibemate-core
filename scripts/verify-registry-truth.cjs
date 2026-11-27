@@ -13,8 +13,8 @@
  * version genuinely is not there.
  *
  * Usage:
- *   node scripts/verify-registry-truth.cjs --package fibemate-core --version 0.1.1
- *   node scripts/verify-registry-truth.cjs --package x --version y --timeout 900 --json-out out.json
+ *   node scripts/verify-registry-truth.cjs --package fibemate-core --version 0.1.1   (JSON on stdout)
+ *   node scripts/verify-registry-truth.cjs --package x --version y --timeout 900
  *   node scripts/verify-registry-truth.cjs --self-test
  *
  * Exit codes:
@@ -28,7 +28,7 @@
 const fs = require('fs');
 
 function parseArgs(argv) {
-  const out = { timeout: 900, interval: 10, selfTest: false, jsonOut: null, tarball: null };
+  const out = { timeout: 900, interval: 10, selfTest: false, tarball: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--self-test') out.selfTest = true;
@@ -36,7 +36,6 @@ function parseArgs(argv) {
     else if (a === '--version') out.version = argv[++i];
     else if (a === '--timeout') out.timeout = Number(argv[++i]);
     else if (a === '--interval') out.interval = Number(argv[++i]);
-    else if (a === '--json-out') out.jsonOut = argv[++i];
     else if (a === '--tarball') out.tarball = argv[++i];
     else if (a === '--strict-sha') out.strictSha = true;
     else if (a === '--help' || a === '-h') out.help = true;
@@ -46,7 +45,7 @@ function parseArgs(argv) {
 }
 
 function packumentUrl(name) {
-  return 'https://registry.npmjs.org/' + name.replace('/', '%2f');
+  return 'https://registry.npmjs.org/' + String(name).split('/').join('%2f');
 }
 
 /**
@@ -147,7 +146,7 @@ async function main() {
         shaCheck = { local, registry: d.shasum, equal: local === d.shasum };
         if (!shaCheck.equal) {
           const level = args.strictSha ? '::error::' : '::warning::';
-          console.log(level + 'tarball shasum differs: local=' + local + ' registry=' + d.shasum);
+          console.error(level + 'tarball shasum differs: local=' + local + ' registry=' + d.shasum);
         }
       }
       const result = {
@@ -164,13 +163,12 @@ async function main() {
         attempts: attempt,
         checkedAt: stamp,
       };
-      if (args.jsonOut) fs.writeFileSync(args.jsonOut, JSON.stringify(result, null, 2) + '\n', 'utf8');
       console.log(JSON.stringify(result, null, 2));
       if (shaCheck && !shaCheck.equal && args.strictSha) return 3;
       return 0;
     }
     const state = verdict.status === 'staged' ? 'staged (not installable yet)' : 'not visible';
-    console.log('attempt ' + attempt + ': ' + args.package + '@' + args.version + ' ' + state + ' at ' + stamp);
+    console.error('attempt ' + attempt + ': ' + args.package + '@' + args.version + ' ' + state + ' at ' + stamp);
     await new Promise((r) => setTimeout(r, args.interval * 1000));
   }
 
@@ -182,7 +180,6 @@ async function main() {
     attempts: attempt,
     checkedAt: new Date().toISOString(),
   };
-  if (args.jsonOut) fs.writeFileSync(args.jsonOut, JSON.stringify(result, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify(result, null, 2));
   return 1;
 }

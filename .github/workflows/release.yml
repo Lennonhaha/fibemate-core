@@ -219,8 +219,7 @@ jobs:
             --version "$version" \
             --timeout 900 \
             --interval 10 \
-            --tarball "$tarball" \
-            --json-out registry-truth.json
+            --tarball "$tarball" > registry-truth.json
           rc=$?
           rm -f "$tarball"
           set -e
