@@ -7,6 +7,12 @@ FIBEMATE 后量子密码学核心原语 — 纯 JavaScript 实现，浏览器 / 
 > cannot guarantee constant-time execution — the JIT may reorder or eliminate operations.
 > Use the WASM/C path in the main repository for anything that needs real timing guarantees.
 
+> **0.1.0 已废弃（2026-11-27）** — 0.1.0 的 ML-KEM-768 既不是 FIPS 203，也不是可互操作的 Kyber round-3。
+> 它的矩阵采样把 nonce 截断成 1 字节（`(i<<8)|j` 写进 `Uint8Array` 只剩低字节），同一列的所有行共用同一多项式；
+> KeyGen 又漏了 FIPS 203 的域分隔符 `k`。后果是：与本实现自身 roundtrip 永远为 true，
+> 但解封装任何标准实现的密文都不报错，而是**静默返回错误的共享密钥**。
+> 使用 `>=0.1.1`；若生成过 0.1.0 的密钥，请全部作废并重新生成。
+
 ## 当前版本内容
 
 | 原语 | 标准 | 实现状态 | 说明 |
@@ -22,14 +28,14 @@ FIBEMATE 后量子密码学核心原语 — 纯 JavaScript 实现，浏览器 / 
 需要 Node.js 18 或更高版本（见 `package.json` 的 `engines` 字段）。
 
 ```bash
-npm install fibemate-core@0.1.0
+npm install fibemate-core@0.1.1
 ```
 
-发布于 2026-11-15，由 tag `v0.1.0` 触发的 GitHub Actions 发布，带 Sigstore provenance
+0.1.1 发布于 2026-11-27，由 tag `v0.1.1` 触发的 GitHub Actions 发布，带 Sigstore provenance
 （SLSA），可在下载后校验：
 
 ```bash
-npm view fibemate-core@0.1.0 dist.integrity dist.attestations
+npm view fibemate-core@0.1.1 dist.integrity dist.attestations
 npm audit signatures
 ```
 
@@ -53,7 +59,7 @@ console.log(Buffer.from(recovered).equals(Buffer.from(sharedSecret))); // true
 ```
 
 把上面五行存成 `run.js` 直接 `node run.js`，输出 `true`。这段是在临时目录里 `npm install` 打包产物
-（`fibemate-core-0.1.0.tgz`，16 KB，六个文件）之后跑出来的，不是从源码目录 require 的结果。
+（`fibemate-core-0.1.1.tgz`，17 KB，七个文件）之后跑出来的，不是从源码目录 require 的结果。
 
 `decapsulate` 的参数顺序是 `(secretKey, ciphertext)`，与部分库相反；下面「使用」一节是带长度注释的版本。
 
