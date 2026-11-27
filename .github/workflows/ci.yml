@@ -27,6 +27,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: ${{ matrix.node }}
+      - name: install dependencies
+        run: npm ci
       - name: run reference KEM tests and the README quick start
         run: npm test
 
@@ -38,8 +40,23 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '22'
+      - name: install dependencies
+        run: npm ci
       - name: every known defect must turn the KAT red
         run: npm run test:mutation
+
+  coverage:
+    name: coverage gate (lines 90 / functions 90 / branches 80)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+      - name: install dependencies
+        run: npm ci
+      - name: coverage thresholds (c8)
+        run: npm run test:coverage
 
   encoding:
     name: encoding gate

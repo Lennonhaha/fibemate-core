@@ -332,6 +332,12 @@ function encapsulate(publicKey){
  * For KAT / ACVP vector testing only; see the warning on keygenDerand.
  */
 function encapsDerand(publicKey,m){
+    if(!(publicKey instanceof Uint8Array))
+        throw new TypeError('encapsulate: publicKey must be a Uint8Array');
+    if(publicKey.length!==KYBER_PUBLICKEYBYTES)
+        throw new RangeError('encapsulate: publicKey must be ' + KYBER_PUBLICKEYBYTES + ' bytes, got ' + publicKey.length);
+    if(!encapsKeyCheck(publicKey))
+        throw new Error('encapsulate: public key is not canonical (FIPS 203 7.2)');
     if(!(m instanceof Uint8Array)||m.length!==32) throw new Error('encapsDerand: m must be 32 bytes');
     const K = KYBER_K, eta1 = _KYBER_ETA1, eta2 = _KYBER_ETA2;
     const duBytes = 32 * KYBER_DU;
