@@ -40,7 +40,13 @@ function loadParams(paramSet) {
 loadParams(_currentParamSet);  // default: ML-KEM-768
 
 // Detect WebCrypto (globalThis.crypto in browsers, require('crypto').webcrypto in Node)
-const _webcrypto = (typeof crypto !== 'undefined' && crypto.getRandomValues) ? crypto : null;
+// Resolve per call, not at load: Node 18 has no global crypto, and a seeded
+// RNG shim replaces globalThis.crypto after this module is required.
+function getCrypto() {
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto && globalThis.crypto.getRandomValues) return globalThis.crypto;
+    try { const wc = require('crypto').webcrypto; if (wc && wc.getRandomValues) return wc; } catch (_e) { /* no backend */ }
+    return null;
+}
 
 // Fixed ring constants (independent of parameter set k)
 const N = 256, Q = 3329, NTT_INV = 3303;
@@ -255,9 +261,9 @@ function samplePolyCompat(seed, nonce) {
 // KeyGen — FIPS 203 §7.1 (NTT domain, runtime parameter set)
 // ============================================================================
 function generateKeypair(){
-    if (!_webcrypto) throw new Error('Web Crypto API (crypto.getRandomValues) required');
-    const d=crypto.getRandomValues(new Uint8Array(32));
-    const z=crypto.getRandomValues(new Uint8Array(32));
+    if (!getCrypto()) throw new Error('Web Crypto API (crypto.getRandomValues) required');
+    const d=getCrypto().getRandomValues(new Uint8Array(32));
+    const z=getCrypto().getRandomValues(new Uint8Array(32));
     return keygenDerand(d,z);
 }
 
@@ -316,8 +322,8 @@ function keygenDerand(d,z){
 // Encaps — FIPS 203 §7.2 (NTT domain)
 // ============================================================================
 function encapsulate(publicKey){
-    if (!_webcrypto) throw new Error('Web Crypto API (crypto.getRandomValues) required');
-    const m=crypto.getRandomValues(new Uint8Array(32));
+    if (!getCrypto()) throw new Error('Web Crypto API (crypto.getRandomValues) required');
+    const m=getCrypto().getRandomValues(new Uint8Array(32));
     return encapsDerand(publicKey,m);
 }
 

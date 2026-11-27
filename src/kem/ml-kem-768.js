@@ -24,6 +24,12 @@ const {
     sha3_256
 } = fips;
 
+function getCrypto() {
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto && globalThis.crypto.subtle) return globalThis.crypto;
+    try { const wc = require('crypto').webcrypto; if (wc && wc.subtle) return wc; } catch (_e) { /* no backend */ }
+    return null;
+}
+
 // ============================================================================
 // Hybrid Key Exchange (ECDH P-256 + ML-KEM-768)
 // ============================================================================
@@ -34,18 +40,18 @@ class HybridKeyExchange {
     }
     async initialize() {
         this.kemKeypair = generateKeypair();
-        this.ecdhKeypair = await crypto.subtle.generateKey(
+        this.ecdhKeypair = await getCrypto().subtle.generateKey(
             { name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']
         );
         return {
             kemPublicKey: this.kemKeypair.publicKey,
-            ecdhPublicKey: await crypto.subtle.exportKey('raw', this.ecdhKeypair.publicKey)
+            ecdhPublicKey: await getCrypto().subtle.exportKey('raw', this.ecdhKeypair.publicKey)
         };
     }
     async encapsulateToPeer(pk, ecdhPk) {
         const k = encapsulate(pk);
-        const e = await crypto.subtle.importKey('raw', ecdhPk, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
-        const d = await crypto.subtle.deriveBits({ name: 'ECDH', public: e }, this.ecdhKeypair.privateKey, 256);
+        const e = await getCrypto().subtle.importKey('raw', ecdhPk, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+        const d = await getCrypto().subtle.deriveBits({ name: 'ECDH', public: e }, this.ecdhKeypair.privateKey, 256);
         const c = new Uint8Array(64);
         c.set(k.sharedSecret, 0);
         c.set(new Uint8Array(d), 32);
@@ -53,8 +59,8 @@ class HybridKeyExchange {
     }
     async decapsulateFromPeer(ct, ecdhPk) {
         const ks = decapsulate(this.kemKeypair.secretKey, ct);
-        const e = await crypto.subtle.importKey('raw', ecdhPk, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
-        const d = await crypto.subtle.deriveBits({ name: 'ECDH', public: e }, this.ecdhKeypair.privateKey, 256);
+        const e = await getCrypto().subtle.importKey('raw', ecdhPk, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+        const d = await getCrypto().subtle.deriveBits({ name: 'ECDH', public: e }, this.ecdhKeypair.privateKey, 256);
         const c = new Uint8Array(64);
         c.set(ks, 0);
         c.set(new Uint8Array(d), 32);
