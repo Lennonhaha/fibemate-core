@@ -19,7 +19,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node test/ml-kem-768.test.js && node --test test/quickstart.test.js && node test/kat-mlkem768.test.js"
+    "test": "node test/ml-kem-768.test.js && node --test test/quickstart.test.js && node test/kat-mlkem768.test.js",
+    "test:mutation": "node scripts/mutation-check.cjs"
   },
   "keywords": [
     "pqc",
