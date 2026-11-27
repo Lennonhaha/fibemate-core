@@ -1,6 +1,6 @@
 {
   "name": "fibemate-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "FIBEMATE post-quantum crypto core — ML-KEM-768 (FIPS 203) pure-JS reference implementation",
   "type": "commonjs",
   "author": "刘天赫 <research@fibemate.net>",
@@ -13,12 +13,14 @@
   "files": [
     "index.js",
     "src/kem/ml-kem-768.js",
+    "src/kem/fips203.js",
     "src/kem/params.js",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "test": "node test/ml-kem-768.test.js && node --test test/quickstart.test.js"
+    "test": "node test/ml-kem-768.test.js && node --test test/quickstart.test.js && node test/kat-mlkem768.test.js",
+    "test:mutation": "node scripts/mutation-check.cjs"
   },
   "keywords": [
     "pqc",
