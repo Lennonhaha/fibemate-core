@@ -75,3 +75,50 @@ test('non-canonical decapsulation key is rejected when it cannot be parsed', () 
   const out = kem.decapsulate(bad, new Uint8Array(1088));
   assert.equal(out.length, 32);
 });
+
+test('decapsulate enforces the FIPS 203 7.3 decapsulation-key check', () => {
+  const kp = kem.generateKeypair();
+  const e = kem.encapsulate(kp.publicKey);
+  const pkOff = 3 * 384;
+  const hOff = pkOff + 1184;
+
+  const badH = kp.secretKey.slice();
+  badH[hOff] ^= 0x01;
+  assert.equal(kem.decapsKeyCheck(badH), false, 'probe must fail the key check');
+  assert.throws(() => kem.decapsulate(badH, e.ciphertext), /inconsistent|H\(ek\)/i);
+
+  const badPk = kp.secretKey.slice();
+  badPk[pkOff] ^= 0x01;
+  assert.throws(() => kem.decapsulate(badPk, e.ciphertext), /inconsistent|H\(ek\)/i);
+});
+
+test('extreme lengths are rejected before touching the buffer body', () => {
+  const kp = kem.generateKeypair();
+  const huge = new Uint8Array(8 * 1024 * 1024);
+  const t0 = process.hrtime.bigint();
+  assert.throws(() => kem.decapsulate(kp.secretKey, huge), RangeError);
+  assert.throws(() => kem.encapsulate(huge), RangeError);
+  const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+  assert.ok(ms < 200, 'length checks must be O(1): ' + ms.toFixed(1) + 'ms');
+});
+
+test('type confusion is rejected at every entry point', () => {
+  const kp = kem.generateKeypair();
+  const ct = new Uint8Array(1088);
+  for (const v of [null, undefined, 'x', 42, {}, [], new ArrayBuffer(1088)]) {
+    assert.throws(() => kem.decapsulate(v, ct), TypeError);
+    assert.throws(() => kem.decapsulate(kp.secretKey, v), TypeError);
+    assert.throws(() => kem.encapsulate(v), TypeError);
+  }
+});
+
+test('derand entry points reject wrong seed lengths', () => {
+  const kp = kem.generateKeypair();
+  for (const n of [0, 31, 33, 64]) {
+    assert.throws(() => kem.generateKeypairDerand(new Uint8Array(n), new Uint8Array(32)), /32 bytes/);
+    assert.throws(() => kem.generateKeypairDerand(new Uint8Array(32), new Uint8Array(n)), /32 bytes/);
+  }
+  for (const n of [0, 31, 33]) {
+    assert.throws(() => kem.encapsulateDerand(kp.publicKey, new Uint8Array(n)), /32 bytes/);
+  }
+});
